@@ -43,6 +43,8 @@ public class XYLineChartExample extends JFrame {
         ValueAxis domain = plot.getDomainAxis();
         domain.setVisible(false);
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+        //comment below line to see connected lines
+        renderer.setSeriesLinesVisible(0, false);
         renderer.setBaseToolTipGenerator((xyDataset, series, item) -> {
             Number x = xyDataset.getX(series, item);
             Number y = xyDataset.getY(series, item);
