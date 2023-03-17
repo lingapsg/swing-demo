@@ -15,27 +15,82 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 
 public class XYLineChartExample extends JFrame {
 
     private Timer timer;
+    private boolean enabled = true;
+
+    private ActionListener timerListener;
 
     public XYLineChartExample() {
-        super("XY Line Chart Example with JFreechart");
+        super("Map Coordinates Plot");
+        JPanel mainPanel = new JPanel();
 
-        XYDataset dataset = createDataset(getCoordinates());
-        JPanel chartPanel = createChartPanel(dataset);
-        add(chartPanel, BorderLayout.CENTER);
+        // chart
+        JFreeChart chart = createChart();
+        mainPanel.add(new ChartPanel(chart), BorderLayout.CENTER);
 
-        setSize(640, 480);
+        // button
+        JPanel buttonPanel = createButtonPanel(chart);
+        mainPanel.add(buttonPanel, BorderLayout.CENTER);
+
+        add(mainPanel);
+
+        setSize(640, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
     }
 
-    private JPanel createChartPanel(XYDataset dataset) {
-        String chartTitle = "Objects Movement Chart";
+    private JPanel createButtonPanel(JFreeChart chart) {
+        JPanel buttonPanel = new JPanel();
+        LayoutManager buttonLayout = new FlowLayout();
+        buttonPanel.setLayout(buttonLayout);
 
+        JButton reloadButton = new JButton("Reload");
+        reloadButton.addActionListener(e -> {
+            stopTimerAndRemoveListener();
+            chart.getXYPlot().setDataset(createDataset(getCoordinates()));
+            addListenerAndStartTimer();
+        });
+        buttonPanel.add(reloadButton);
+
+        JButton enableDisableButton = new JButton("Disable Auto-reload");
+        enableDisableButton.addActionListener(e -> {
+            if (enabled) {
+                stopTimerAndRemoveListener();
+                enabled = false;
+                enableDisableButton.setText("Enable Auto-reload");
+            } else {
+                addListenerAndStartTimer();
+                enabled = true;
+                enableDisableButton.setText("Disable Reload");
+            }
+        });
+        buttonPanel.add(enableDisableButton);
+
+        JButton aboutButton = new JButton("About");
+        aboutButton.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "About");
+        });
+
+        buttonPanel.add(aboutButton);
+
+        JButton exitButton = new JButton("Exit");
+        exitButton.addActionListener(e -> {
+            dispose();
+        });
+        buttonPanel.add(exitButton);
+        return buttonPanel;
+    }
+
+    private JFreeChart createChart() {
+        String chartTitle = "Map Coordinates Chart";
+
+        XYDataset dataset = createDataset(getCoordinates());
         JFreeChart chart = ChartFactory.createXYLineChart(chartTitle,
                 "", "", dataset, PlotOrientation.VERTICAL, false, true, false);
 
@@ -57,11 +112,16 @@ public class XYLineChartExample extends JFrame {
         plot.setRenderer(renderer);
         //addAnnotationsToPlot(plot);
 
-        timer = new Timer(5000, e -> {
+        timerListener = timerListener(chart);
+        timer = new Timer(5000, timerListener);
+        return chart;
+    }
+
+    private ActionListener timerListener(JFreeChart chart) {
+        return e -> {
             XYDataset newDataset = createDataset(getCoordinates1());
             chart.getXYPlot().setDataset(newDataset);
-        });
-        return new ChartPanel(chart);
+        };
     }
 
     private XYDataset createDataset(List<Coordinate> coordinates) {
@@ -79,6 +139,16 @@ public class XYLineChartExample extends JFrame {
 
     public void startTimer() {
         timer.start();
+    }
+
+    private void stopTimerAndRemoveListener() {
+        timer.removeActionListener(timerListener);
+        timer.stop();
+    }
+
+    private void addListenerAndStartTimer() {
+        timer.addActionListener(timerListener);
+        startTimer();
     }
 
     private List<Coordinate> getCoordinates() {
